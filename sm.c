@@ -1,6 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "sm.h"
+struct sharedData {
+	int id;
+	int passageiros;
+} data = {-1,-1};
 
 key_t generateKey(){
 	return ftok("passageiro.c", 'R');
@@ -14,10 +18,20 @@ void* attachSM(){
 	return shmat(getIdSM(), (void *)0, 0);
 }
 
+int getPassengersSM(){
+	return data.passageiros;
+}
+void setPassengersSM(){
+	data.passageiros++;
+}
+
+void decPassengersSM(){
+	data.passageiros--;
+}
+
 int creatorSM(){
-	void *sm = (void *)0;
+	/*void *sm = (void *)0;*/
 	int shmid;
-	struct sharedData *data;
 
 	shmid = getIdSM();
 	if (shmid == -1) {
@@ -25,21 +39,13 @@ int creatorSM(){
 		return -1;
 	}
 
-	sm = attachSM();
-	if (sm == (void *)-1) {
-		printf("Shmat falhou.\n");
-		return -1;
-	}
-	
-	data = (struct sharedData *)sm;
-	data -> id = shmid;
-	data -> passageiros = 3;
-	data -> margem = 0; /* Mudar para aleatorio */
-	
-	/*if (shmdt(sm) == -1) {
-		printf("Shmdt falhou.\n");
-		exit(EXIT_FAILURE);
-	}*/
+	data.id = shmid;
+	data.passageiros = 0;
 	return 0;
 }
-
+void removeSM(){
+	if (shmdt((void *)0) == -1) {
+		printf("Shmdt falhou.\n");
+		exit(EXIT_FAILURE);
+	}
+}

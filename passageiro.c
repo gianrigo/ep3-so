@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <time.h>
 #include "sm.h"
 #include "semaph.h"
 
@@ -16,17 +17,29 @@
 #define TRAVESSIA 2
 
 int sem_id, pid, partida;
+int desistiu = 0;
+
+void giveUp(){
+	printf("Passageiro %d desistiu.\n",pid);
+	desistiu = 1;
+}
 
 /* Aqui o passageiro embarca na margem especificada se possível, ou espera o barco chegar à sua margem do rio */
 void embarca(int margem){
 
 	if(margem == ESQUERDA){
 		printf("Passageiro %d aguardando na margem ESQUERDA\n",pid);
-		waitForAllSPH(sem_id,ME);
+		if(waitForAllTimedSPH(sem_id,ME) == -1){
+			giveUp();
+			return;
+		}
 	}
 	else{
 		printf("Passageiro %d aguardando na margem DIREITA\n",pid);
-		waitForAllSPH(sem_id,MD);
+		if(waitForAllTimedSPH(sem_id,MD) == -1){
+			giveUp();
+			return;
+		}
 	}
 
 	/* Se for possível entrar no barco, o passageiro embarca */
@@ -70,12 +83,13 @@ void desembarca(int margem)
 void atravessa(int margem){
 
 	if( margem == ESQUERDA)
-		printf("O passageiro %d está atravessando da margem esquerda para a margem direita do rio.\n",pid);
+		printf("Passageiro %d está atravessando da margem esquerda para a margem direita do rio.\n",pid);
 	else
-		printf("O passageiro %d está atravessando da margem direita para a margem esquerda do rio.\n",pid);
+		printf("Passageiro %d está atravessando da margem direita para a margem esquerda do rio.\n",pid);
 }
 
 int main(int argc, char *argv[]){
+	int lado;
 /*	int i;
   int inicializado = 0;
   key_t key;
@@ -95,56 +109,14 @@ int main(int argc, char *argv[]){
 
   pid = getpid();
 
-  /*if ((key = ftok("passageiro.c", 'R')) == -1) {
-    printf("Não foi possível obter a chave.\n");
-    exit(-1);
-  }
-
-  if((sem_id = semget(key, 3, 0666 | IPC_CREAT | IPC_EXCL) == EEXIST){
-    semopts.buf = &semds;
-
-   */ /*Se chegou aqui, significa que conjunto de semáforos já foi criado.*/
-   /* while(!inicializado){*/
-      /*Espera a inicialização dos semáforos*/
-      /*inicializado = 1;
-
-      for(i = 0; i < 3; i++){
-        if(semctl(sem_id, i, IPC_STAT, semopts) == -1){
-          printf("Não pôde ler o semáforo.\n");
-          exit(-1);
-        }else{
-          if(semds.sem_otime == 0){
-            inicializado = 0;
-          }
-        }
-      }
-    }
-  }else{*/
-    /*por padrão, vamos inicializar o barco na margem esquerda*/
-    /*semopts.val = 3;
-    if(semctl(sem_id, ESQUERDA, SET_VAL, sem_opts) == -1){
-      printf("Falhou ao inicializar o semáforo.\n");
-      exit(-1);
-    }
-
-    semopts.val = 0;
-    if(semctl(sem_id, DIREITA, SET_VAL, sem_opts) == -1){
-      printf("Falhou ao inicializar o semáforo.\n");
-      exit(-1);
-    }
-
-    semopts.val = 0;
-    if(semctl(sem_id, TRAVESSIA, SET_VAL, sem_opts) == -1){
-      printf("Falhou ao inicializar o semáforo.\n");
-      exit(-1);
-    }
-  }*/
 	if ( (sem_id = createSPH(6)) == -1)
 		sem_id = getIdSPH();
 	/* Caso os semáforos não existiam, estes foram criados na chamada da função createSPH e serão inicializados abaixo */
   else{
-		setValSPH(sem_id, ME, 0); /* Barco inicia na margem esquerda */
-		setValSPH(sem_id, MD, 1);
+		srand (time(NULL));
+		lado = rand() % 2; /* Margem "aleatória" */
+		setValSPH(sem_id, ME, lado); 
+		setValSPH(sem_id, MD, (1-lado));
 		setValSPH(sem_id, EMBARCA, 3);
 		setValSPH(sem_id, ATRAVESSA, 3);
 		setValSPH(sem_id, DESEMBARCA, 3);
@@ -152,9 +124,11 @@ int main(int argc, char *argv[]){
 	}
 
 	embarca(partida);
-	atravessa(partida);
-	desembarca(partida);
-	/* imprime passageiro saiu do pier */
+	if(desistiu == 0){
+		atravessa(partida);
+		desembarca(partida);
+	}
+	printf("Passageiro %d saiu do pier.\n",pid);  
 	exit(0);
 }
 

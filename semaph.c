@@ -6,6 +6,7 @@
 #include <sys/sem.h>
 #include <unistd.h>
 #include "sm.h"
+#define _GNU_SOURCE
 
 union semun {
 	int val ;
@@ -64,7 +65,7 @@ void waitSPH(int semid, int snum){
 	struct sembuf sempar;
 	sempar.sem_num = snum-1 ;
 	sempar.sem_op = -1;
-     	sempar.sem_flg = 0;
+	sempar.sem_flg = 0;
 
 	if (semop(semid, &sempar, 1) == -1) {
 		perror("Error semop()") ;
@@ -76,12 +77,45 @@ void waitForAllSPH(int semid, int snum){
 	struct sembuf sempar;
 	sempar.sem_num = snum-1 ;
 	sempar.sem_op = 0;
-     	sempar.sem_flg = 0;
+	sempar.sem_flg = 0;
 
 	if (semop(semid, &sempar, 1) == -1) {
 		perror("Error semop()") ;
 		exit(-1);
 	}
+}
+/*int waitTimedSPH(int semid, int snum, struct timespec *timeout){
+	struct sembuf sempar;
+	sempar.sem_num = snum-1 ;
+	sempar.sem_op = -1;
+	sempar.sem_flg = 0;
+	printf("TIME %d \n",timeout->tv_sec);
+	if (semtimedop(semid, &sempar, 1,timeout) == -1) {
+		if( errno == EAGAIN)
+			return -1;
+		perror("Error semop()") ;
+		exit(-1);
+	}
+	printf("TIME %d \n",timeout->tv_sec);
+	return 0;
+}
+*/
+int waitForAllTimedSPH(int semid, int snum){
+	struct sembuf sempar;
+	struct timespec timeout;
+	sempar.sem_num = snum-1 ;
+	sempar.sem_op = 0;
+	sempar.sem_flg = 0;
+
+	timeout.tv_sec = 10;
+
+	if (semtimedop(semid, &sempar, 1,&timeout) == -1) {
+		if( errno == EAGAIN)
+			return -1;
+		perror("Error semop()") ;
+		exit(-1);
+	}
+	return 0;
 }
 
 /* Incrementa o valor do semáforo */
@@ -97,9 +131,11 @@ void decValSPH(int semid, int snum){
     /*
      * destruicao do semaforo
      */
-     /*if (semctl(semid,0,IPC_RMID,0)==-1){
-             perror("Impossivel de destruir o semaforo") ;
-             exit(1) ;
-     }
-     else printf("O semaforo com semid %d foi destruido\n",semid) ;*/
-	/*if( getValSPH(semid,3) == 0 )*/
+void removeSPH(int semid){
+	if (semctl(semid,0,IPC_RMID,0) == -1){
+		perror("Impossível remover o semáforo");
+		exit(-1);
+	}
+	else
+		printf("O semáforo com semid %d foi destruído.\n",semid);
+}
