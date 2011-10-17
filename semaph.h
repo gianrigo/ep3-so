@@ -8,4 +8,4 @@ int waitForAllTimedSPH(int,int);
 void incValSPH(int,int);
 void decValSPH(int,int);
 void removeSPH(int semid);
-int getInfoSPH(int semid, int snum);
+int getInfoSPH(int semid, int snum, int option);

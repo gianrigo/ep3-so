@@ -49,13 +49,20 @@ int getValSPH(int semid, int snum){
 	return semval;
 }
 
-int getInfoSPH(int semid, int snum){
+int getInfoSPH(int semid, int snum, int option){
 	int semval;
 	union semun arg;
-
-	if ( (semval = semctl(semid,snum-1,GETNCNT,arg)) == -1){
-		perror("Error semctl()") ;
-		exit(-1) ;
+	if( option == 0 ){
+		if ( (semval = semctl(semid,snum-1,GETZCNT,arg)) == -1){
+			perror("Error semctl()") ;
+			exit(-1) ;
+		}
+	}
+	else{
+		if ( (semval = semctl(semid,snum-1,GETNCNT,arg)) == -1){
+			perror("Error semctl()") ;
+			exit(-1) ;
+		}
 	}
 	return semval;
 }

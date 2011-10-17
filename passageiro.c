@@ -20,7 +20,7 @@ int sem_id, pid, partida;
 int desistiu = 0;
 
 void checkOut(){
-	if(	(getValSPH(sem_id, EMBARCA) == 3) && (getValSPH(sem_id, ATRAVESSA) == 3) &&	(getValSPH(sem_id, DESEMBARCA) == 3) && (getInfoSPH(sem_id, 1) == 0) && (getInfoSPH(sem_id, 2) == 0) && (getInfoSPH(sem_id, 6) == 0)  ){
+	if(	(getValSPH(sem_id, EMBARCA) == 3) && (getValSPH(sem_id, ATRAVESSA) == 3) &&	(getValSPH(sem_id, DESEMBARCA) == 3) && (getInfoSPH(sem_id, 1,0) == 0) && (getInfoSPH(sem_id, 2,0) == 0) && (getInfoSPH(sem_id, 6,0) == 0)  ){
 		printf("Como não há alguem embarcando, atravessando ou desembarcando, os recursos serão eliminados pelo passageiro %d.\n",pid);
 		removeSPH(sem_id);
 	}
@@ -56,7 +56,7 @@ void embarca(int margem){
 	/* Fica aguardando a lotação completa para fazer a travessia */
 	decValSPH(sem_id,ATRAVESSA);
 	printf("Passageiro %d aguardando a travessia.\n",pid);  
-	waitForAllSPH(sem_id,ATRAVESSA);        
+	waitForAllSPH(sem_id,ATRAVESSA);       
 }
 /* Aqui o passageiro desembarca do barco vindo da margem especificada e realiza quaisquer outras tarefas para dar continuidade à viagem de outros passageiros */
 void desembarca(int margem)
@@ -67,30 +67,31 @@ void desembarca(int margem)
 	printf("Passageiro %d desembarcou.\n",pid);  
 
 	/* Reinicia os semáforos */
-	
-	waitSPH(sem_id,MUTEX);
-	if( getValSPH(sem_id,(margem+1)) == 0){
-		printf("Passageiro %d está atualizando os semáforos.\n",pid);
-		if( margem == ESQUERDA){
-			decValSPH(sem_id,MD);
-			incValSPH(sem_id,ME);
-		}
-		else{
-			decValSPH(sem_id,ME);
-			incValSPH(sem_id,MD);
-		}
+	if( getValSPH(sem_id,MUTEX) == 1){
+			if( getValSPH(sem_id,(margem+1)) == 0){
+				printf("Passageiro %d está atualizando os semáforos.\n",pid);
+				if( margem == ESQUERDA){
+					decValSPH(sem_id,MD);
+					incValSPH(sem_id,ME);
+				}
+				else{
+					decValSPH(sem_id,ME);
+					incValSPH(sem_id,MD);
+				}
 
-	setValSPH(sem_id, EMBARCA, 3);
-	setValSPH(sem_id, ATRAVESSA, 3);
-	setValSPH(sem_id, DESEMBARCA, 3);
+			setValSPH(sem_id, EMBARCA, 3);
+			setValSPH(sem_id, ATRAVESSA, 3);
+			setValSPH(sem_id, DESEMBARCA, 3);
+			setValSPH(sem_id, MUTEX, 3);
+		}
 	}
-	incValSPH(sem_id,MUTEX);
+		decValSPH(sem_id,MUTEX);
 	checkOut();
+
 }
 
 /* O barco atravessa o rio a partir da margem especificada */
 void atravessa(int margem){
-
 	if( margem == ESQUERDA)
 		printf("Passageiro %d está atravessando da margem esquerda para a margem direita do rio.\n",pid);
 	else
@@ -99,11 +100,6 @@ void atravessa(int margem){
 
 int main(int argc, char *argv[]){
 	int lado;
-/*	int i;
-  int inicializado = 0;
-  key_t key;
-  struct semid_ds semds;
-  union semun semopts;  */
 
 	/* lê margem de origem como parâmetro */
 	if( argc != 2){ 
@@ -129,7 +125,7 @@ int main(int argc, char *argv[]){
 		setValSPH(sem_id, EMBARCA, 3);
 		setValSPH(sem_id, ATRAVESSA, 3);
 		setValSPH(sem_id, DESEMBARCA, 3);
-		setValSPH(sem_id, MUTEX, 1);
+		setValSPH(sem_id, MUTEX, 3);
 	}
 
 	embarca(partida);

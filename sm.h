@@ -1,7 +1,3 @@
-#include <sys/shm.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/ipc.h>
 #define SHM_SIZE 1024
 
 key_t generateKey();

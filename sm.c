@@ -1,10 +1,20 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/shm.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/ipc.h>
 #include "sm.h"
-struct sharedData {
-	int id;
+
+typedef struct {
 	int passageiros;
-} data = {-1,-1};
+} sharedData;
+
+static struct {
+	int id;
+	sharedData *sd;
+} data = { -1, NULL };
+
 
 key_t generateKey(){
 	return ftok("passageiro.c", 'R');
@@ -19,18 +29,17 @@ void* attachSM(){
 }
 
 int getPassengersSM(){
-	return data.passageiros;
+	return data.sd->passageiros;
 }
 void setPassengersSM(){
-	data.passageiros++;
+	data.sd->passageiros++;
 }
 
 void decPassengersSM(){
-	data.passageiros--;
+	data.sd->passageiros--;
 }
 
 int creatorSM(){
-	/*void *sm = (void *)0;*/
 	int shmid;
 
 	shmid = getIdSM();
@@ -38,9 +47,9 @@ int creatorSM(){
 		printf("Shmget falhou.\n");
 		return -1;
 	}
-
+	data.sd = (sharedData*) shmat(data.id, 0, 0);
 	data.id = shmid;
-	data.passageiros = 0;
+	data.sd->passageiros = -1;
 	return 0;
 }
 void removeSM(){
