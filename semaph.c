@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,7 +7,6 @@
 #include <sys/sem.h>
 #include <unistd.h>
 #include "sm.h"
-#define _GNU_SOURCE
 
 union semun {
 	int val ;
@@ -49,6 +49,17 @@ int getValSPH(int semid, int snum){
 	return semval;
 }
 
+int getInfoSPH(int semid, int snum){
+	int semval;
+	union semun arg;
+
+	if ( (semval = semctl(semid,snum-1,GETNCNT,arg)) == -1){
+		perror("Error semctl()") ;
+		exit(-1) ;
+	}
+	return semval;
+}
+
 void setValSPH(int semid, int snum, int val){
 	struct sembuf sempar;
 	sempar.sem_num = snum-1 ;
@@ -84,22 +95,7 @@ void waitForAllSPH(int semid, int snum){
 		exit(-1);
 	}
 }
-/*int waitTimedSPH(int semid, int snum, struct timespec *timeout){
-	struct sembuf sempar;
-	sempar.sem_num = snum-1 ;
-	sempar.sem_op = -1;
-	sempar.sem_flg = 0;
-	printf("TIME %d \n",timeout->tv_sec);
-	if (semtimedop(semid, &sempar, 1,timeout) == -1) {
-		if( errno == EAGAIN)
-			return -1;
-		perror("Error semop()") ;
-		exit(-1);
-	}
-	printf("TIME %d \n",timeout->tv_sec);
-	return 0;
-}
-*/
+
 int waitForAllTimedSPH(int semid, int snum){
 	struct sembuf sempar;
 	struct timespec timeout;
@@ -137,5 +133,5 @@ void removeSPH(int semid){
 		exit(-1);
 	}
 	else
-		printf("O semáforo com semid %d foi destruído.\n",semid);
+		printf("O conjunto de semáforos com semid %d foi removido.\n",semid);
 }

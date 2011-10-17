@@ -19,9 +19,16 @@
 int sem_id, pid, partida;
 int desistiu = 0;
 
+void checkOut(){
+	if(	(getValSPH(sem_id, EMBARCA) == 3) && (getValSPH(sem_id, ATRAVESSA) == 3) &&	(getValSPH(sem_id, DESEMBARCA) == 3) && (getInfoSPH(sem_id, 1) == 0) && (getInfoSPH(sem_id, 2) == 0) && (getInfoSPH(sem_id, 6) == 0)  ){
+		printf("Como não há alguem embarcando, atravessando ou desembarcando, os recursos serão eliminados pelo passageiro %d.\n",pid);
+		removeSPH(sem_id);
+	}
+}
 void giveUp(){
 	printf("Passageiro %d desistiu.\n",pid);
 	desistiu = 1;
+	checkOut();
 }
 
 /* Aqui o passageiro embarca na margem especificada se possível, ou espera o barco chegar à sua margem do rio */
@@ -62,7 +69,8 @@ void desembarca(int margem)
 	/* Reinicia os semáforos */
 	
 	waitSPH(sem_id,MUTEX);
-	if( getValSPH(sem_id,(margem+1)) == 0){ 
+	if( getValSPH(sem_id,(margem+1)) == 0){
+		printf("Passageiro %d está atualizando os semáforos.\n",pid);
 		if( margem == ESQUERDA){
 			decValSPH(sem_id,MD);
 			incValSPH(sem_id,ME);
@@ -77,6 +85,7 @@ void desembarca(int margem)
 	setValSPH(sem_id, DESEMBARCA, 3);
 	}
 	incValSPH(sem_id,MUTEX);
+	checkOut();
 }
 
 /* O barco atravessa o rio a partir da margem especificada */
